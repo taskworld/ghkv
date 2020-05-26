@@ -1,0 +1,18 @@
+{
+  "dependencies": {
+    "@octokit/rest": "^17.9.2"
+  },
+  "files": [
+    "lib",
+    "src"
+  ],
+  "main": "./lib/index.js",
+  "typings": "./lib/index.d.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepare": "rm -rf lib && tsc"
+  },
+  "devDependencies": {
+    "typescript": "^3.9.3"
+  }
+}

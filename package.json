@@ -15,5 +15,25 @@
   "devDependencies": {
     "typescript": "^3.9.3"
   },
-  "version": "1.0.0-eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+  "version": "1.0.0-eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+  "name": "ghkv",
+  "description": "A key-value store for your CI/CD workflows. Backed by GitHub API.",
+  "directories": {
+    "lib": "lib"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/taskworld/ghkv.git"
+  },
+  "keywords": [
+    "datastore",
+    "keyvalue",
+    "github"
+  ],
+  "author": "Thai Pangsakulyanont <thai.p@taskworld.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/taskworld/ghkv/issues"
+  },
+  "homepage": "https://github.com/taskworld/ghkv#readme"
 }

@@ -1,9 +1,6 @@
 {
   "queue": [
     {
-      "owner": "d5cad1c5-3068-438e-9fb4-a472bb26e14f"
-    },
-    {
       "owner": "973d891c-6d52-4ede-90df-9637a582498f"
     },
     {
@@ -14,7 +11,7 @@
     }
   ],
   "active": {
-    "owner": "567c0bab-ffa8-4a59-a517-d5ee89c072d6",
-    "expiresAt": "2020-06-04T10:59:46.960Z"
+    "owner": "d5cad1c5-3068-438e-9fb4-a472bb26e14f",
+    "expiresAt": "2020-06-04T11:00:48.076Z"
   }
 }

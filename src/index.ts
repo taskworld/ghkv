@@ -36,10 +36,16 @@ export class GhkvDataStore {
     let doc = this.cache.get(key)
     if (!doc) {
       const path = key + '.json'
-      type Cache = { existing?: { sha: string; content?: string } }
+      type Cache = {
+        existing?: { sha: string; content?: string; expires: number }
+      }
       let cache: Cache | null
       const ensureCache = async ({ renew = false } = {}) => {
-        if (!cache || renew) {
+        if (
+          !cache ||
+          renew ||
+          (cache.existing && Date.now() > cache.existing.expires)
+        ) {
           try {
             const { data } = await this.octokit.repos
               .getContents({
@@ -52,7 +58,13 @@ export class GhkvDataStore {
             if (Array.isArray(data)) {
               throw new Error(`Did not expect "${path}" to be a directory.`)
             }
-            cache = { existing: data }
+            cache = {
+              existing: {
+                sha: data.sha,
+                content: data.content,
+                expires: Date.now() + 5e3,
+              },
+            }
           } catch (error) {
             if (error.status === 404) {
               cache = {}
@@ -76,6 +88,12 @@ export class GhkvDataStore {
             const newContent = Buffer.from(
               JSON.stringify(newData, null, 2)
             ).toString('base64')
+            if (
+              String(newContent).trim() ===
+              String(cache.existing?.content).trim()
+            ) {
+              return newData
+            }
             const { data: result } = await this.octokit.repos
               .createOrUpdateFile({
                 sha: cache.existing?.sha,
@@ -87,7 +105,11 @@ export class GhkvDataStore {
                 message: message,
               })
               .catch(decorateErrorWithMessage('createOrUpdateFile'))
-            cache.existing = { sha: result.content.sha, content: newContent }
+            cache.existing = {
+              sha: result.content.sha,
+              content: newContent,
+              expires: Date.now() + 5e3,
+            }
             return newData
           } catch (error) {
             if (error.status === 409 && attempt < 5) {

@@ -1,17 +1,14 @@
 {
-  "active": {
-    "owner": "f28690ac-b656-41c1-89e3-422bf7e92dff",
-    "expiresAt": "2020-06-04T10:55:53.287Z"
-  },
   "queue": [
-    {
-      "owner": "f53158e3-daa7-4162-8d66-6719ee8ce1be"
-    },
     {
       "owner": "b4ea3030-5570-4516-9890-240bdcc424dd"
     },
     {
       "owner": "567c0bab-ffa8-4a59-a517-d5ee89c072d6"
     }
-  ]
+  ],
+  "active": {
+    "owner": "f53158e3-daa7-4162-8d66-6719ee8ce1be",
+    "expiresAt": "2020-06-04T10:52:29.662Z"
+  }
 }

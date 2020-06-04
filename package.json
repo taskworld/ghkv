@@ -13,7 +13,9 @@
     "prepare": "rm -rf lib && tsc"
   },
   "devDependencies": {
-    "typescript": "^3.9.3"
+    "@types/yargs": "^15.0.5",
+    "typescript": "^3.9.3",
+    "yargs": "^15.3.1"
   },
   "version": "1.0.0-eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
   "name": "ghkv",

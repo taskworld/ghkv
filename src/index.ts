@@ -43,9 +43,10 @@ export class GhkvDataStore {
       const { owner, repo, branch } = this
       this.connectivityPromise = (async () => {
         const {
-          data: { permissions: { push } = {} },
+          data: { permissions },
         } = await this.octokit.repos.get({ owner, repo })
-        debug('Repo loaded, push permission is', push)
+        const { push } = permissions || {}
+        debug('Repo loaded, permissions are', permissions)
         if (!push && !this.readOnly) {
           throw new Error(
             `You don’t have a permission to push to the repository "${owner}/${repo}" and the readOnly option has not been set.`

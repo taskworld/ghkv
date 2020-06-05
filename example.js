@@ -45,7 +45,7 @@ yargs
   .command('test:counter', 'Test basic optimistic locking', {}, async () => {
     const store = createStore()
     const doc = store.doc('examples/counter')
-    doc.set({ count: 0 }, { message: `Reset counter ${by()}` })
+    await doc.set({ count: 0 }, { message: `Reset counter ${by()}` })
     if (process.env.GHKV_EXAMPLE_TEST_COUNTER_MODE === 'concurrently') {
       await execa('node', ['example', 'test:counter:increment-concurrently'], {
         stdio: 'inherit',

@@ -1,3 +1,7 @@
 {
-  "queue": []
+  "queue": [],
+  "active": {
+    "owner": "5eda09d26c2bbf4ec55e0edc",
+    "expiresAt": "2020-06-05T09:06:07.938Z"
+  }
 }

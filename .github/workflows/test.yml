@@ -3,7 +3,7 @@ on:
   push:
     branches-ignore:
       - datastore
-environment:
+env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   DEBUG: ghkv
 jobs:

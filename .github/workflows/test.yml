@@ -10,12 +10,14 @@ jobs:
   get-set:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v2
       - run: yarn
-      - run: node example.js set answer 42
-      - run: node example.js get answer | grep 42
+      - run: node example set answer 42
+      - run: node example get answer | grep 42
   counter:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v2
       - run: yarn
-      - run: node example.js test:counter
-      - run: node example.js test:counter-concurrent
+      - run: node example test:counter
+      - run: node example test:counter-concurrent

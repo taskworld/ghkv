@@ -1,4 +1,7 @@
 import { Octokit } from '@octokit/rest'
+import Debug from 'debug'
+
+const debug = Debug('ghkv')
 
 export type GhkvCreateOptions = {
   accessToken: string
@@ -42,6 +45,7 @@ export class GhkvDataStore {
         const {
           data: { permissions: { push } = {} },
         } = await this.octokit.repos.get({ owner, repo })
+        debug('Repo loaded, push permission is', push)
         if (!push && !this.readOnly) {
           throw new Error(
             `You don’t have a permission to push to the repository "${owner}/${repo}" and the readOnly option has not been set.`
@@ -53,6 +57,7 @@ export class GhkvDataStore {
             repo,
             branch,
           })
+          debug('Branch loaded, push permission is', push)
         }
       })()
     }
@@ -69,38 +74,56 @@ export class GhkvDataStore {
         existing?: { sha: string; content?: string; expires: number }
       }
       let cache: Cache | null
+      let cacheLoadPromise: Promise<void> | undefined
       const ensureCache = async ({ renew = false } = {}) => {
         if (
           !cache ||
           renew ||
           (cache.existing && Date.now() > cache.existing.expires)
         ) {
-          try {
-            const { data } = await this.octokit.repos
-              .getContents({
-                owner,
-                repo,
-                path,
-                ref: branch,
-              })
-              .catch(decorateErrorWithMessage(`getContents`))
-            if (Array.isArray(data)) {
-              throw new Error(`Did not expect "${path}" to be a directory.`)
-            }
-            cache = {
-              existing: {
-                sha: data.sha,
-                content: data.content,
-                expires: Date.now() + 5e3,
-              },
-            }
-          } catch (error) {
-            if (error.status === 404) {
-              cache = {}
-            } else {
-              throw error
+          if (cacheLoadPromise) {
+            await cacheLoadPromise
+          } else {
+            cacheLoadPromise = (async () => {
+              try {
+                debug('Requesting contents for', path)
+                const { data } = await this.octokit.repos
+                  .getContents({
+                    owner,
+                    repo,
+                    path,
+                    ref: branch,
+                  })
+                  .catch(decorateErrorWithMessage(`getContents`))
+                if (Array.isArray(data)) {
+                  throw new Error(`Did not expect "${path}" to be a directory.`)
+                }
+                debug('Fetched contents for', path, data.sha)
+                cache = {
+                  existing: {
+                    sha: data.sha,
+                    content: data.content,
+                    expires: Date.now() + 5e3,
+                  },
+                }
+              } catch (error) {
+                if (error.status === 404) {
+                  debug('Not found', path)
+                  cache = {}
+                } else {
+                  throw error
+                }
+              }
+            })()
+            try {
+              await cacheLoadPromise
+            } finally {
+              cacheLoadPromise = undefined
             }
           }
+        }
+        if (!cache) {
+          throw new Error('Internal error: Cache data not found despite loaded')
         }
         return cache
       }
@@ -134,6 +157,7 @@ export class GhkvDataStore {
                 message: message,
               })
               .catch(decorateErrorWithMessage('createOrUpdateFile'))
+            debug('Updated', path, result.content.sha)
             cache.existing = {
               sha: result.content.sha,
               content: newContent,
@@ -142,8 +166,10 @@ export class GhkvDataStore {
             return newData
           } catch (error) {
             if ((error.status === 409 || error.status === 422) && attempt < 5) {
+              debug('Update error', path, error.status)
               const retryDelay = retryDelays[attempt++]
               if (retryDelay != null) {
+                debug('Retry updating %s in %s ms', path, retryDelay)
                 await new Promise((resolve) => setTimeout(resolve, retryDelay))
                 continue
               }

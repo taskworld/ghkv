@@ -1,0 +1,21 @@
+name: Test
+on:
+  push:
+    branches-ignore:
+      - datastore
+environment:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  DEBUG: ghkv
+jobs:
+  get-set:
+    runs-on: ubuntu-latest
+    steps:
+      - run: yarn
+      - run: node example set answer 42
+      - run: node example get answer | grep 42
+  counter:
+    runs-on: ubuntu-latest
+    steps:
+      - run: yarn
+      - run: node example test:counter
+      - run: node example test:counter-concurrent

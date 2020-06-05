@@ -5,6 +5,7 @@ on:
       - datastore
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  GHKV_IGNORE_PERMISSION_WARNINGS: 1
   DEBUG: ghkv
 jobs:
   get-set:

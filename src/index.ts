@@ -48,9 +48,11 @@ export class GhkvDataStore {
         const { push } = permissions || {}
         debug('Repo loaded, permissions are', permissions)
         if (!push && !this.readOnly) {
-          throw new Error(
-            `You don’t have a permission to push to the repository "${owner}/${repo}" and the readOnly option has not been set.`
-          )
+          if (process.env.GHKV_IGNORE_PERMISSION_WARNINGS !== '1') {
+            throw new Error(
+              `You don’t have a permission to push to the repository "${owner}/${repo}" and the readOnly option has not been set.`
+            )
+          }
         }
         if (branch) {
           await this.octokit.repos.getBranch({

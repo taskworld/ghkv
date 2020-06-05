@@ -13,7 +13,7 @@ const { GhkvDataStore } = require('ghkv')
 - `options.accessToken` An access token used to access the GitHub API
 - `options.owner` Owner of the repository
 - `options.repo` Repository name
-- `options.branch` (Optional) Branch used to store data, defaults to the default branch
+- `options.branch` Branch used to store data, defaults to the default branch
 
 ### `const doc = store.doc<T>(key)`
 

@@ -7,7 +7,7 @@ export type GhkvCreateOptions = {
   accessToken: string
   owner: string
   repo: string
-  branch?: string
+  branch: string
   readOnly?: boolean
 }
 

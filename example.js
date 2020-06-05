@@ -1,8 +1,10 @@
 // @ts-check
 const yargs = require('yargs')
-const uuidv4 = require('uuid').v4
 const { GhkvDataStore } = require('./lib')
 const { GhkvResourceLock } = require('./lib/contrib/resource-lock')
+const os = require('os')
+const execa = require('execa')
+const expect = require('expect')
 
 function createStore() {
   const store = new GhkvDataStore({
@@ -40,64 +42,105 @@ yargs
       console.log(JSON.stringify(result, null, 2))
     }
   )
-  .command('test:counter', 'Add to a shared counter', {}, async (args) => {
+  .command('test:counter', 'Test basic optimistic locking', {}, async () => {
     const store = createStore()
     const doc = store.doc('examples/counter')
-    const result = await doc.update((item = {}) => {
-      return { ...item, count: (+item.count || 0) + 1 }
-    })
-    console.log(JSON.stringify(result, null, 2))
+    doc.set({ count: 0 }, { message: `Reset counter ${by()}` })
+    if (process.env.GHKV_EXAMPLE_TEST_COUNTER_MODE === 'concurrently') {
+      await execa('node', ['example', 'test:counter:increment-concurrently'], {
+        stdio: 'inherit',
+      })
+    } else {
+      await Promise.all([
+        execa('node', ['example', 'test:counter:increment-single'], {
+          stdio: 'inherit',
+        }),
+        execa('node', ['example', 'test:counter:increment-single'], {
+          stdio: 'inherit',
+        }),
+        execa('node', ['example', 'test:counter:increment-single'], {
+          stdio: 'inherit',
+        }),
+      ])
+    }
+    expect((await doc.get()).count).toBe(3)
   })
   .command(
-    'test:counter-concurrent',
+    'test:counter:increment-single',
     'Add to a shared counter',
     {},
-    async (args) => {
+    async () => {
+      const store = createStore()
+      const doc = store.doc('examples/counter')
+      const result = await doc.update(
+        (item = {}) => {
+          return { ...item, count: (+item.count || 0) + 1 }
+        },
+        { message: `Increment counter ${by()}` }
+      )
+      console.log(JSON.stringify(result, null, 2))
+    }
+  )
+  .command(
+    'test:counter:increment-concurrently',
+    'Add to a shared counter',
+    {},
+    async () => {
       const store = createStore()
       const doc = store.doc('examples/counter')
       const updateFn = (item = {}) => {
         return { ...item, count: (+item.count || 0) + 1 }
       }
       const result = await Promise.all([
-        doc.update(updateFn),
-        doc.update(updateFn),
-        doc.update(updateFn),
+        doc.update(updateFn, {
+          message: `Increment counter ${by('1')}`,
+        }),
+        doc.update(updateFn, {
+          message: `Increment counter ${by('2')}`,
+        }),
+        doc.update(updateFn, {
+          message: `Increment counter ${by('3')}`,
+        }),
       ])
       console.log(JSON.stringify(result, null, 2))
     }
   )
-  .command('test:multi-store', 'Multiple store test', {}, async (args) => {
-    const storeA = createStore()
-    const storeB = createStore()
-    await storeA.doc('examples/hello').get()
-    await storeB.doc('examples/hello').set({ ok: true })
-    const result = await storeA
-      .doc('examples/hello')
-      .update((x) => ({ ...x, foo: 'bar' }))
-    console.log(JSON.stringify(result, null, 2))
-  })
-  .command('test:queue', 'Test queueing up', {}, async (args) => {
-    const id = uuidv4()
-    const log = (format, ...args) => console.error(`[${id}] ${format}`, ...args)
-    log('Consumer initialized')
-
-    const store = createStore()
-    const lock = new GhkvResourceLock(store, 'examples/distributed-queue')
-    lock.log = log
-    const acquiredLock = await lock.acquire()
-    try {
-      for (let i = 1; i <= 100; i++) {
-        log('Working: ' + i + '%')
-        await delay(1000)
+  .command(
+    'test:counter-queue',
+    'Test queueing up to test the counter',
+    {},
+    async (args) => {
+      const store = createStore()
+      const lock = new GhkvResourceLock(store, 'examples/counter-lock')
+      const acquiredLock = await lock.acquire(
+        [process.env.GITHUB_RUN_ID, os.hostname(), process.pid].join('-')
+      )
+      try {
+        await execa('node', ['example', 'test:counter'], { stdio: 'inherit' })
+      } finally {
+        await acquiredLock.release()
       }
-    } finally {
-      await acquiredLock.release()
     }
-  })
+  )
+  .command(
+    'test',
+    'Test running multiple multiple tests that has a shared critical section',
+    {},
+    async () => {
+      await Promise.all([
+        execa('node', ['example', 'test:counter-queue'], {
+          stdio: 'inherit',
+          env: { GHKV_EXAMPLE_TEST_COUNTER_MODE: 'normal' },
+        }),
+        execa('node', ['example', 'test:counter-queue'], {
+          stdio: 'inherit',
+          env: { GHKV_EXAMPLE_TEST_COUNTER_MODE: 'concurrently' },
+        }),
+      ])
+    }
+  )
   .parse()
 
-const delay = (t) => {
-  let timeout
-  const promise = new Promise((resolve) => (timeout = setTimeout(resolve, t)))
-  return Object.assign(promise, { timeout })
+function by(suffix = '') {
+  return `by ${os.hostname()}/${process.pid}${suffix ? ` (${suffix})` : ''}`
 }

@@ -1,7 +1,9 @@
 {
   "dependencies": {
     "@octokit/rest": "^17.9.2",
-    "debug": "^4.1.1"
+    "bson-objectid": "^1.3.0",
+    "debug": "^4.1.1",
+    "delay": "^4.3.0"
   },
   "files": [
     "lib",

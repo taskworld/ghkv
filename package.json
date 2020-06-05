@@ -18,7 +18,7 @@
     "uuid": "^8.1.0",
     "yargs": "^15.3.1"
   },
-  "version": "1.0.0-eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+  "version": "1.0.0-eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
   "name": "ghkv",
   "description": "A key-value store for your CI/CD workflows. Backed by GitHub API.",
   "directories": {

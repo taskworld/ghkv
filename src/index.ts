@@ -141,7 +141,7 @@ export class GhkvDataStore {
             }
             return newData
           } catch (error) {
-            if (error.status === 409 && attempt < 5) {
+            if ((error.status === 409 || error.status === 422) && attempt < 5) {
               const retryDelay = retryDelays[attempt++]
               if (retryDelay != null) {
                 await new Promise((resolve) => setTimeout(resolve, retryDelay))

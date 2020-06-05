@@ -5,6 +5,7 @@ export type GhkvCreateOptions = {
   owner: string
   repo: string
   branch?: string
+  readOnly?: boolean
 }
 
 export type GhkvDataReference<T> = {
@@ -22,6 +23,8 @@ export class GhkvDataStore {
   private repo: string
   private branch?: string
   private octokit: Octokit
+  private readOnly = false
+  private connectivityPromise?: Promise<unknown>
 
   constructor(options: GhkvCreateOptions) {
     this.octokit = new Octokit({
@@ -30,6 +33,32 @@ export class GhkvDataStore {
     this.owner = options.owner
     this.repo = options.repo
     this.branch = options.branch
+    this.readOnly = options.readOnly ?? false
+  }
+  private async ensureConnectivity() {
+    if (!this.connectivityPromise) {
+      const { owner, repo, branch } = this
+      this.connectivityPromise = (async () => {
+        const {
+          data: { permissions: { push } = {} },
+        } = await this.octokit.repos.get({ owner, repo })
+        if (!push && !this.readOnly) {
+          throw new Error(
+            `You don’t have a permission to push to the repository "${owner}/${repo}" and the readOnly option has not been set.`
+          )
+        }
+        if (branch) {
+          await this.octokit.repos.getBranch({
+            owner,
+            repo,
+            branch,
+          })
+        }
+      })()
+    }
+    await this.connectivityPromise.catch(
+      decorateErrorWithMessage(`ensureConnectivity`)
+    )
   }
   doc<T>(key: string): GhkvDataReference<T> {
     const { owner, repo, branch } = this
@@ -125,6 +154,7 @@ export class GhkvDataStore {
       }
       const newDoc: GhkvDataReference<T> = {
         get: async () => {
+          await this.ensureConnectivity()
           const cache = await ensureCache({ renew: true }).catch(
             decorateErrorWithMessage(`get(${key})`)
           )
@@ -134,6 +164,7 @@ export class GhkvDataStore {
           v,
           { message = `set(${key}) @ ${new Date().toJSON()}` } = {}
         ) => {
+          await this.ensureConnectivity()
           return updateDoc(() => v, message).catch(
             decorateErrorWithMessage(`set(${key})`)
           )
@@ -142,6 +173,7 @@ export class GhkvDataStore {
           updater: (data: T | undefined) => T,
           { message = `update(${key}) @ ${new Date().toJSON()}` } = {}
         ) => {
+          await this.ensureConnectivity()
           return updateDoc(updater, message).catch(
             decorateErrorWithMessage(`update(${key})`)
           )
